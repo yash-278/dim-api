@@ -53,6 +53,9 @@
     },
     "port": {
       "ENV": "PGPORT"
+    },
+    "ssl": {
+      "rejectUnauthorized": false
     }
   }
 }
