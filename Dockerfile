@@ -9,7 +9,7 @@ WORKDIR /app
 FROM base AS build
 
 COPY package.json pnpm-lock.yaml ./
-RUN --mount=type=cache,id=pnpm-build,target=/pnpm/store pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 COPY tsconfig.json ./
 COPY api ./api
 RUN pnpm build:api
@@ -19,7 +19,7 @@ FROM base AS runtime
 ENV NODE_ENV=production
 
 COPY package.json pnpm-lock.yaml ./
-RUN --mount=type=cache,id=pnpm-runtime,target=/pnpm/store pnpm install --frozen-lockfile --production
+RUN pnpm install --frozen-lockfile --production
 COPY --from=build /app/dist/api ./api
 COPY api/database.json ./api/database.json
 COPY api/migrations ./api/migrations
