@@ -13,6 +13,7 @@ import {
 } from '../shapes/loadout-share.js';
 import { Loadout } from '../shapes/loadouts.js';
 import { UserInfo } from '../shapes/user.js';
+import { getShortlinkBaseUrl } from '../urls.js';
 import slugify from './slugify.js';
 import { validateLoadout } from './update.js';
 
@@ -21,7 +22,7 @@ slugify.extend({ '|': '-' });
 
 const getShareURL = (loadout: Loadout, shareId: string) => {
   const titleSlug = slugify(loadout.name);
-  return `https://dim.gg/${shareId}/${titleSlug}`;
+  return `${getShortlinkBaseUrl()}/${shareId}/${titleSlug}`;
 };
 
 /**

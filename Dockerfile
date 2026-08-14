@@ -1,23 +1,33 @@
-FROM node:22-alpine
+FROM node:22-alpine AS base
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN npm install -g corepack@latest && corepack enable
+RUN npm install --global corepack@latest && corepack enable
+
+WORKDIR /app
+
+FROM base AS build
+
+COPY package.json pnpm-lock.yaml ./
+RUN --mount=type=cache,id=pnpm-build,target=/pnpm/store pnpm install --frozen-lockfile
+COPY tsconfig.json ./
+COPY api ./api
+RUN pnpm build:api
+
+FROM base AS runtime
+
+ENV NODE_ENV=production
+
+COPY package.json pnpm-lock.yaml ./
+RUN --mount=type=cache,id=pnpm-runtime,target=/pnpm/store pnpm install --frozen-lockfile --production
+COPY --from=build /app/dist/api ./api
+COPY api/database.json ./api/database.json
+COPY api/migrations ./api/migrations
+COPY api/dim-gg/views ./api/dim-gg/views
+COPY api/admin/views ./api/admin/views
+COPY dim-gg-static ./dim-gg-static
 
 USER node
-RUN mkdir -p /home/node/app/node_modules && chown -R node:node /home/node/app
-
-WORKDIR /home/node/app
-
-COPY package*.json ./
-COPY pnpm-lock.yaml ./
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --production && pnpm store prune
-COPY --chown=node:node run.sh .
-COPY --chown=node:node dist .
-COPY --chown=node:node api/dim-gg/views api/dim-gg/views
-COPY --chown=node:node api/admin/views api/admin/views
-COPY --chown=node:node dim-gg-static dim-gg-static
-
 EXPOSE 3000
 
-CMD [ "./run.sh" ]
+CMD ["node", "--enable-source-maps", "api/index.js"]

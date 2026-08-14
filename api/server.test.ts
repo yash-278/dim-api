@@ -1139,6 +1139,7 @@ describe('searches', () => {
 
 describe('loadouts', () => {
   it('can share a loadout', async () => {
+    process.env.SHORTLINK_BASE_URL = 'https://link.dim.yashkadam.com';
     const request: LoadoutShareRequest = {
       platformMembershipId,
       loadout,
@@ -1148,7 +1149,9 @@ describe('loadouts', () => {
       .expect(200)
       .json()) as LoadoutShareResponse;
 
-    expect(updateResult.shareUrl).toMatch(/https:\/\/dim.gg\/[a-z0-9]{7}\/Test-Loadout/);
+    expect(updateResult.shareUrl).toMatch(
+      /https:\/\/link\.dim\.yashkadam\.com\/[a-z0-9]{7}\/Test-Loadout/,
+    );
   });
 });
 

@@ -47,8 +47,14 @@ app.post('/new_app', permissiveCors, createAppHandler);
 // Get a shared loadout
 app.get('/loadout_share', permissiveCors, getLoadoutShareHandler);
 
-// Admin panel routes (before API key middleware)
-app.use('/admin', adminRouter);
+// Keep the operator-only admin panel disabled unless it is explicitly configured.
+app.use('/admin', (req, res, next) => {
+  if (process.env.ENABLE_ADMIN === 'true') {
+    adminRouter(req, res, next);
+  } else {
+    next();
+  }
+});
 
 /* ****** API KEY REQUIRED ****** */
 /* Any routes declared below this will require an API Key in X-API-Key header */

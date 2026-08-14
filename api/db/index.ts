@@ -5,7 +5,11 @@ import { metrics } from '../metrics/index.js';
 // for connection information (from .env or a ConfigMap)
 export const pool = new pg.Pool({
   max: 4,
-  ssl: process.env.PGSSL ? process.env.PGSSL === 'true' : { rejectUnauthorized: false },
+  ...(process.env.PGSSL
+    ? {
+        ssl: process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : false,
+      }
+    : {}),
   connectionTimeoutMillis: 1000,
   // Query timeout is on the NodeJS side, it times out the an operation on the client
   query_timeout: 2500,

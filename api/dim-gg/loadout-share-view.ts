@@ -1,6 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import path from 'path';
 import { loadLoadoutShare } from '../routes/loadout-share.js';
+import { getAppBaseUrl, getShortlinkBaseUrl } from '../urls.js';
 
 /**
  * Save a loadout to be shared via a dim.gg link.
@@ -27,8 +28,9 @@ export const loadoutShareViewHandler = asyncHandler(async (req, res) => {
 
   const loadoutsUrlParams = new URLSearchParams({ loadout: JSON.stringify(loadout) }).toString();
 
-  const appShareUrl = `https://app.destinyitemmanager.com/loadouts?${loadoutsUrlParams}`;
-  const betaShareUrl = `https://beta.destinyitemmanager.com/loadouts?${loadoutsUrlParams}`;
+  const appBaseUrl = getAppBaseUrl();
+  const shortlinkBaseUrl = getShortlinkBaseUrl();
+  const appShareUrl = `${appBaseUrl}/loadouts?${loadoutsUrlParams}`;
 
   const numMods = loadout.parameters?.mods?.length ?? 0;
   const hasFashion = Boolean(loadout.parameters?.modsByBucket);
@@ -53,7 +55,7 @@ export const loadoutShareViewHandler = asyncHandler(async (req, res) => {
   res.render('loadout', {
     loadout,
     appShareUrl,
-    betaShareUrl,
+    shortlinkBaseUrl,
     numMods,
     hasFashion,
     hasSubclass,

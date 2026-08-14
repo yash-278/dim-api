@@ -4,14 +4,13 @@ import * as Tracing from '@sentry/tracing';
 import express from 'express';
 import http from 'http';
 import morgan from 'morgan';
-import vhost from 'vhost';
 import { refreshApps, stopAppsRefresh } from './apps/index.js';
 import { closeDbPool } from './db/index.js';
 import { app as dimGgApp } from './dim-gg/server.js';
 import { metrics } from './metrics/index.js';
 import { app as dimApiApp } from './server.js';
 
-const port = 3000;
+const port = Number.parseInt(process.env.PORT ?? '3000', 10);
 
 metrics.increment('startup.count', 1);
 
@@ -32,54 +31,19 @@ app.use(Sentry.Handlers.tracingHandler());
 app.use(Sentry.Handlers.errorHandler());
 app.use(morgan('combined')); // logging
 
-// In dev, edit .env to serve only one vhost
-switch (process.env.VHOST) {
-  case 'api.destinyitemmanager.com':
-    app.use(dimApiApp);
-    break;
-
-  case 'dim.gg':
-    app.use(dimGgApp);
-    break;
-
-  default:
-    {
-      // The DIM API (DIM sync)
-      app.use(vhost('api.destinyitemmanager.com', dimApiApp));
-      // dim.gg is both a redirect, and a shortlink service
-      app.use(vhost('dim.gg', dimGgApp));
-      // These are just redirects (for now?)
-      app.use(
-        vhost('beta.dim.gg', (req, res) => {
-          // Instruct CF to cache for 15 minutes
-          res.set('Cache-Control', 'max-age=900');
-          res.redirect(`https://beta.destinyitemmanager.com${req.originalUrl}`);
-        }),
-      );
-      app.use(
-        vhost('app.dim.gg', (req, res) => {
-          // Instruct CF to cache for 15 minutes
-          res.set('Cache-Control', 'max-age=900');
-          res.redirect(`https://app.destinyitemmanager.com${req.originalUrl}`);
-        }),
-      );
-      app.use(
-        vhost('pr.dim.gg', (req, res) => {
-          // Instruct CF to cache for 15 minutes
-          res.set('Cache-Control', 'max-age=900');
-          res.redirect(`https://pr.destinyitemmanager.com${req.originalUrl}`);
-        }),
-      );
-      app.use(
-        vhost('guide.dim.gg', (req, res) => {
-          // Instruct CF to cache for 15 minutes
-          res.set('Cache-Control', 'max-age=900');
-          res.redirect(`https://github.com/DestinyItemManager/DIM/wiki${req.originalUrl}`);
-        }),
-      );
+const shortlinkHost = process.env.SHORTLINK_HOST;
+if (shortlinkHost) {
+  app.use((req, res, next) => {
+    if (req.hostname === shortlinkHost) {
+      dimGgApp(req, res, next);
+    } else {
+      next();
     }
-    break;
+  });
 }
+
+// The generated Railway hostname and API custom hostname both use the API app.
+app.use(dimApiApp);
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({

@@ -32,6 +32,12 @@ dependencies:
   cors:
     specifier: ^2.8.5
     version: 2.8.5
+  db-migrate:
+    specifier: ^0.11.14
+    version: 0.11.14
+  db-migrate-pg:
+    specifier: ^1.5.2
+    version: 1.5.2
   dotenv:
     specifier: ^16.6.1
     version: 16.6.1
@@ -151,12 +157,6 @@ devDependencies:
   '@typescript-eslint/parser':
     specifier: ^8.48.1
     version: 8.48.1(eslint@9.39.1)(typescript@5.9.3)
-  db-migrate:
-    specifier: ^0.11.14
-    version: 0.11.14
-  db-migrate-pg:
-    specifier: ^1.5.2
-    version: 1.5.2
   eslint:
     specifier: ^9.39.1
     version: 9.39.1

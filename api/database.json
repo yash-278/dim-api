@@ -36,5 +36,23 @@
       "rejectUnauthorized": false,
       "ca": "./ca-certificate.crt"
     }
+  },
+  "railway": {
+    "driver": "pg",
+    "user": {
+      "ENV": "PGUSER"
+    },
+    "password": {
+      "ENV": "PGPASSWORD"
+    },
+    "host": {
+      "ENV": "PGHOST"
+    },
+    "database": {
+      "ENV": "PGDATABASE"
+    },
+    "port": {
+      "ENV": "PGPORT"
+    }
   }
 }

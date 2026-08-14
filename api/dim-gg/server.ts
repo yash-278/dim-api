@@ -1,6 +1,7 @@
 import express from 'express';
 import expressStatsd from '../metrics/express.js';
 import { metrics } from '../metrics/index.js';
+import { getAppBaseUrl } from '../urls.js';
 import { loadoutShareViewHandler } from './loadout-share-view.js';
 
 /** dim.gg - DIM share links server */
@@ -18,7 +19,7 @@ app.use(express.json({ limit: '2mb' })); // for parsing application/json
 app.get('/', (_req, res) => {
   // Instruct CF to cache for 15 minutes
   res.set('Cache-Control', 'max-age=900');
-  res.redirect('https://destinyitemmanager.com/');
+  res.redirect(getAppBaseUrl());
 });
 
 // Loadout share preview/landing pages
