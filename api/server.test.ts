@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { makeFetch } from 'supertest-fetch';
 import { promisify } from 'util';
 import { v4 as uuid } from 'uuid';
-import { refreshApps, stopAppsRefresh } from './apps/index.js';
+import { refreshApps } from './apps/index.js';
 import { closeDbPool } from './db/index.js';
 import { app } from './server.js';
 import { ApiApp } from './shapes/app.js';
@@ -34,7 +34,6 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  stopAppsRefresh();
   await closeDbPool();
 });
 

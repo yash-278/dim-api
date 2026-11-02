@@ -6,11 +6,7 @@ import { readTransaction } from '../db/index.js';
 import { metrics } from '../metrics/index.js';
 import { ApiApp } from '../shapes/app.js';
 
-/**
- * Express middleware that requires an API key be provided in a header
- * and populates app info in the request based on the matching app.
- */
-export const apiKey: RequestHandler = (req, res, next) => {
+const checkApiKey: RequestHandler = (req, res, next) => {
   if (req.method === 'OPTIONS' || req.path === '/heathcheck') {
     next();
     return;
@@ -38,17 +34,23 @@ export const apiKey: RequestHandler = (req, res, next) => {
   }
 };
 
-let apps: ApiApp[] = [];
-let appsByApiKey: { [apiKey: string]: ApiApp };
-let origins = new Set<string>();
-let appsInterval: NodeJS.Timeout | null = null;
+/**
+ * Express middleware that requires an API key be provided in a header
+ * and populates app info in the request based on the matching app.
+ */
+export const apiKey: RequestHandler = (req, res, next) => {
+  ensureApps().then(() => checkApiKey(req, res, next), next);
+};
 
-export function stopAppsRefresh() {
-  if (appsInterval) {
-    clearTimeout(appsInterval);
-  }
-  appsInterval = null;
-}
+// Reload the app list at most this often. Reloads happen on incoming requests rather
+// than on a timer, so an idle server sends no traffic to Postgres and both can sleep.
+const APPS_MAX_AGE_MS = 60_000;
+
+let apps: ApiApp[] = [];
+let appsByApiKey: { [apiKey: string]: ApiApp } = {};
+let origins = new Set<string>();
+let appsLoadedAt = 0;
+let appsRefresh: Promise<void> | undefined;
 
 /**
  * Look up an app by its API key.
@@ -65,24 +67,40 @@ export function isAppOrigin(origin: string) {
   return origins.has(origin);
 }
 
-export async function refreshApps(): Promise<void> {
-  stopAppsRefresh();
+/**
+ * Load the app list before the first request. After that, serve the cached list and
+ * reload it in the background once it is older than APPS_MAX_AGE_MS.
+ */
+function ensureApps(): Promise<void> {
+  if (!appsLoadedAt) {
+    return refreshApps();
+  }
+  if (Date.now() - appsLoadedAt > APPS_MAX_AGE_MS) {
+    // refreshApps already logs and reports failures; keep serving the cached list.
+    refreshApps().catch(() => undefined);
+  }
+  return Promise.resolve();
+}
 
+/** Reload the app list from Postgres. Concurrent callers share one query. */
+export function refreshApps(): Promise<void> {
+  appsRefresh ??= loadApps().finally(() => {
+    appsRefresh = undefined;
+  });
+  return appsRefresh;
+}
+
+async function loadApps(): Promise<void> {
   try {
-    const appsFromPostgres = await readTransaction((client) => getAllAppsPostgres(client));
-    apps = appsFromPostgres;
+    apps = await readTransaction((client) => getAllAppsPostgres(client));
     digestApps();
+    appsLoadedAt = Date.now();
     metrics.increment('apps.refresh.success.count');
   } catch (e) {
     metrics.increment('apps.refresh.error.count');
     console.error('Error refreshing apps', e);
     Sentry.captureException(e);
     throw e;
-  } finally {
-    // Refresh again every minute or so
-    if (!appsInterval) {
-      appsInterval = setTimeout(refreshApps, 60000 + Math.random() * 10000);
-    }
   }
 }
 

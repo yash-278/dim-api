@@ -1,8 +1,8 @@
 import { GlobalSettings } from '../shapes/global-settings.js';
-import { pool } from './index.js';
+import { query } from './index.js';
 
 export async function getGlobalSettingsQuery(flavor: string) {
-  return pool.query<{ settings: GlobalSettings }>({
+  return query<{ settings: GlobalSettings }>({
     name: 'get_global_settings',
     text: 'SELECT * FROM global_settings where flavor = $1 LIMIT 1',
     values: [flavor],
@@ -10,7 +10,7 @@ export async function getGlobalSettingsQuery(flavor: string) {
 }
 
 export async function setGlobalSettings(flavor: string, settings: Partial<GlobalSettings>) {
-  return pool.query({
+  return query({
     name: 'set_global_settings',
     text: `
       INSERT INTO global_settings (flavor, settings)

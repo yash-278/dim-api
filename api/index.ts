@@ -4,7 +4,6 @@ import * as Tracing from '@sentry/tracing';
 import express from 'express';
 import http from 'http';
 import morgan from 'morgan';
-import { refreshApps, stopAppsRefresh } from './apps/index.js';
 import { closeDbPool } from './db/index.js';
 import { app as dimGgApp } from './dim-gg/server.js';
 import { metrics } from './metrics/index.js';
@@ -87,16 +86,10 @@ createTerminus(server, {
   beforeShutdown,
   onShutdown: async () => {
     console.log('Shutting down');
-    stopAppsRefresh();
     closeDbPool();
   },
 });
 
-refreshApps()
-  .then(() => {
-    server.listen(port, () => console.log(`DIM API started up on port ${port}`));
-  })
-  .catch((e) => {
-    console.log('Unable to load apps', e);
-    throw e;
-  });
+// Start without touching Postgres. The app list loads on the first request, so a
+// cold start does not depend on a sleeping database waking up first.
+server.listen(port, () => console.log(`DIM API started up on port ${port}`));
